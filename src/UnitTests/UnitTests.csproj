@@ -52,10 +52,6 @@
     <Compile Include="Domain\PropertyCreatedEvent.cs" />
     <Compile Include="Domain\WhenClosingTheProperty.cs" />
     <Compile Include="Domain\WhenCreatingAProperty.cs" />
-    <Compile Include="EventStorage\InMemoryEventStoreTests\InContextOfReplayingEvents.cs" />
-    <Compile Include="EventStorage\InMemoryEventStoreTests\InContextOfTestingTheInMemoryEventStore.cs" />
-    <Compile Include="EventStorage\InMemoryEventStoreTests\WhenReplayingAllEvents.cs" />
-    <Compile Include="EventStorage\InMemoryEventStoreTests\WhenStoringANewEventStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
