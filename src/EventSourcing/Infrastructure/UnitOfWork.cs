@@ -19,7 +19,7 @@ namespace EventSourcing.Infrastructure
             _identityMap = new Dictionary<Guid, IAggregateRoot>();
         }
 
-        public TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : IAggregateRoot
+        public TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot
         {
             if (_identityMap.ContainsKey(id))
             {
@@ -29,15 +29,31 @@ namespace EventSourcing.Infrastructure
             return Load<TAggregateRoot>(id);
         }
 
-        private TAggregateRoot Load<TAggregateRoot>(Guid id) where TAggregateRoot : IAggregateRoot
+        private TAggregateRoot Load<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot
         {
-            var events = _eventStore.Replay<IDomainEvent>(id);
-            var ar = _aggregateBuilder.BuildFromEventStream<TAggregateRoot>(events);
-            _identityMap.Add(id,ar);
+            var isSnapshotable = typeof(ISnapshotProvider).IsAssignableFrom(typeof(TAggregateRoot));
+            var snapshot =  isSnapshotable ? _eventStore.LoadSnapshot<ISnapshot>(id) : null;
+
+            TAggregateRoot ar;
+            if(snapshot != null)
+            {
+                var events = _eventStore.Replay<IDomainEvent>(id, snapshot.Version + 1);
+                ar = _aggregateBuilder.BuildFromSnapshot<TAggregateRoot>(snapshot, events);
+            }
+            else
+            {
+                var events = _eventStore.Replay<IDomainEvent>(id);
+                ar = _aggregateBuilder.BuildFromEventStream<TAggregateRoot>(events);
+            }
+
+            if(ar != null)
+            {
+                _identityMap.Add(id,ar);
+            }
             return ar;
         }
 
-        public void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : IAggregateRoot
+        public void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : class, IAggregateRoot
         {
             _identityMap.Add(aggregateRoot.Id, aggregateRoot);
         }
@@ -61,7 +77,16 @@ namespace EventSourcing.Infrastructure
                 return;
             }
 
-            _eventStore.Store(aggregateRoot.Id, eventsToCommit);
+            _eventStore.StoreEvents(aggregateRoot.Id, eventsToCommit);
+
+            var snapshotProvider = aggregateRoot as ISnapshotProvider;
+
+            if(snapshotProvider != null && eventsToCommit.Count() >= snapshotProvider.SnapshotInterval)
+            {
+                var snapshot = snapshotProvider.Snapshot();
+                _eventStore.StoreSnapshot(aggregateRoot.Id,snapshot);
+            }
+
             action(eventsToCommit);
         }
 

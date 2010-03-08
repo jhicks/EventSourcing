@@ -11,7 +11,7 @@ namespace UnitTests.EventStorage.InMemoryEventStoreTests
         {
             using(var transaction = _subjectUnderTest.BeginTransaction())
             {
-                _subjectUnderTest.Store(StreamId, Events);
+                _subjectUnderTest.StoreEvents(StreamId, Events);
                 transaction.Commit();
             }
         }
@@ -40,7 +40,7 @@ namespace UnitTests.EventStorage.InMemoryEventStoreTests
     {
         protected override void When()
         {
-            _subjectUnderTest.Store(StreamId, Events);
+            _subjectUnderTest.StoreEvents(StreamId, Events);
         }
 
         [Then]

@@ -12,12 +12,12 @@ namespace EventSourcing.Infrastructure
             _unitOfWork = unitOfWork;
         }
 
-        public TAggregateRoot GetById<TAggregateRoot>(Guid aggregateId) where TAggregateRoot : IAggregateRoot
+        public TAggregateRoot GetById<TAggregateRoot>(Guid aggregateId) where TAggregateRoot : class, IAggregateRoot
         {
             return _unitOfWork.GetById<TAggregateRoot>(aggregateId);
         }
 
-        public void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : IAggregateRoot
+        public void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : class, IAggregateRoot
         {
             _unitOfWork.Add(aggregateRoot);
         }

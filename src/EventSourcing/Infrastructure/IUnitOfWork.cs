@@ -6,8 +6,8 @@ namespace EventSourcing.Infrastructure
 {
     public interface IUnitOfWork
     {
-        TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : IAggregateRoot;
-        void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : IAggregateRoot;
+        TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot;
+        void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : class, IAggregateRoot;
         void Rollback();
         void Commit(Action<IEnumerable<IDomainEvent>> action);
     }

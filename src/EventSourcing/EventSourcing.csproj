@@ -39,6 +39,8 @@
     <Compile Include="Domain\AggregateRootBase.cs" />
     <Compile Include="Domain\EntityBase.cs" />
     <Compile Include="Domain\IDomainEvent.cs" />
+    <Compile Include="Domain\ISnapshot.cs" />
+    <Compile Include="Domain\ISnapshotProvider.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Infrastructure\IAggregateBuilder.cs" />
     <Compile Include="Domain\IAggregateRoot.cs" />

@@ -10,32 +10,59 @@ namespace EventSourcing.EventStorage
     public class InMemoryEventStore : IEventStore
     {
         private readonly Dictionary<Guid, EventStream> _db;
+        private readonly Dictionary<Guid, object> _snapshots;
 
         private Transaction _transaction;
 
         public InMemoryEventStore()
         {
             _db = new Dictionary<Guid, EventStream>();
+            _snapshots = new Dictionary<Guid, object>();
         }
 
-        public void Store<TEvent>(Guid streamId, IEnumerable<TEvent> stream) where TEvent : class
+        public void StoreEvents<TEvent>(Guid streamId, IEnumerable<TEvent> stream) where TEvent : class
         {
             if(!_db.ContainsKey(streamId))
             {
                 _db.Add(streamId, new EventStream());
             }
 
+            EnsureTransactionInProgress();
+            _transaction.RegisterAction(() => _db[streamId].Store(stream));
+        }
+
+        private void EnsureTransactionInProgress()
+        {
             if(_transaction == null)
             {
                 throw new InvalidOperationException("Transaction is required");
             }
+        }
 
-            _transaction.RegisterAction(() => _db[streamId].Store(stream));
+        public void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class
+        {
+            EnsureTransactionInProgress();
+            _transaction.RegisterAction(() => _snapshots[sourceId] = snapshot);
         }
 
         public IEnumerable<TEvent> Replay<TEvent>(Guid streamId) where TEvent : class
         {
             return _db[streamId].Replay<TEvent>();
+        }
+
+        public IEnumerable<TEvent> Replay<TEvent>(Guid streamId, int fromVersion) where TEvent : class
+        {
+            return _db[streamId].Replay<TEvent>(fromVersion);
+        }
+
+        public TSnapshot LoadSnapshot<TSnapshot>(Guid sourceId) where TSnapshot : class
+        {
+            if (!_snapshots.ContainsKey(sourceId))
+            {
+                return null;
+            }
+
+            return (TSnapshot)_snapshots[sourceId];
         }
 
         public ITransaction BeginTransaction()
@@ -66,6 +93,11 @@ namespace EventSourcing.EventStorage
             public IEnumerable<TEvent> Replay<TEvent>() where TEvent : class
             {
                 return _events.Cast<TEvent>().ToArray();
+            }
+
+            public IEnumerable<TEvent> Replay<TEvent>(int fromVersion)
+            {
+                return _events.Skip(fromVersion - 1).Cast<TEvent>().ToArray();
             }
         }
 
