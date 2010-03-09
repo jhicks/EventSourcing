@@ -13,5 +13,10 @@ namespace EventSourcing.Domain
         {
             return EventCoordinator.Flush();
         }
+
+        public int Version
+        {
+            get { return EventCoordinator.Version; }
+        }
     }
 }

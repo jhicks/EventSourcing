@@ -81,7 +81,7 @@ namespace EventSourcing.Infrastructure
 
             var snapshotProvider = aggregateRoot as ISnapshotProvider;
 
-            if(snapshotProvider != null && eventsToCommit.Count() >= snapshotProvider.SnapshotInterval)
+            if(snapshotProvider != null && aggregateRoot.Version % snapshotProvider.SnapshotInterval == 0)
             {
                 var snapshot = snapshotProvider.Snapshot();
                 _eventStore.StoreSnapshot(aggregateRoot.Id,snapshot);
