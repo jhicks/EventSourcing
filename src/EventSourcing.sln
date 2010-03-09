@@ -5,6 +5,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\Unit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing", "EventSourcing\EventSourcing.csproj", "{61FEA69B-DD76-4C7B-ABE8-ADE009B65EBD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.Db4o", "EventSourcing.Db4o\EventSourcing.Db4o.csproj", "{45C1DBB1-298D-4726-805F-C7DB1867B592}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.Db4o.Tests", "EventSourcing.Db4o.Tests\EventSourcing.Db4o.Tests.csproj", "{675BA939-F34F-4875-AB24-1B71313D2FA2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +23,14 @@ Global
 		{61FEA69B-DD76-4C7B-ABE8-ADE009B65EBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61FEA69B-DD76-4C7B-ABE8-ADE009B65EBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61FEA69B-DD76-4C7B-ABE8-ADE009B65EBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45C1DBB1-298D-4726-805F-C7DB1867B592}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45C1DBB1-298D-4726-805F-C7DB1867B592}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45C1DBB1-298D-4726-805F-C7DB1867B592}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45C1DBB1-298D-4726-805F-C7DB1867B592}.Release|Any CPU.Build.0 = Release|Any CPU
+		{675BA939-F34F-4875-AB24-1B71313D2FA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{675BA939-F34F-4875-AB24-1B71313D2FA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{675BA939-F34F-4875-AB24-1B71313D2FA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{675BA939-F34F-4875-AB24-1B71313D2FA2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
