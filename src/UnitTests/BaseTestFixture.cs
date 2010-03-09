@@ -1,3 +1,4 @@
+// testing code pulled from Fohjin - http://github.com/MarkNijhof/Fohjin
 using System;
 
 using NUnit.Framework;
