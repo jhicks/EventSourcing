@@ -16,6 +16,11 @@ namespace EventSourcing.Domain
             _eventHandlers = new Dictionary<Guid, EventHandlers>();
         }
 
+        public EventCoordinator(Guid aggregateRootId, int initialVersion) : this(aggregateRootId)
+        {
+            Version = initialVersion;
+        }
+
         public Guid AggregateRootId { get { return _aggregateRootId; } }
         public int Version { get; private set; }
 
