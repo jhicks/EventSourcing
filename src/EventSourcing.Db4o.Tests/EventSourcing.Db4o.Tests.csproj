@@ -57,7 +57,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InContextOfReplayingEvents.cs" />
+    <Compile Include="InContextOfStoringEvents.cs" />
+    <Compile Include="InContextOfTestingTheEventStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WhenLoadingASnapshot.cs" />
+    <Compile Include="WhenLoadingASnapshotThatDoesNotExist.cs" />
+    <Compile Include="WhenReplayingEvents.cs" />
+    <Compile Include="WhenReplayingEventsFromAVersion.cs" />
+    <Compile Include="WhenReplayingEventsFromStreamThatDoesNotExists.cs" />
+    <Compile Include="WhenStoringASnapshotForANewSource.cs" />
+    <Compile Include="WhenStoringASnapshotForAnExistingSource.cs" />
+    <Compile Include="WhenStoringASnapshotWithoutATransactionStarted.cs" />
+    <Compile Include="WhenStoringEventsToANewStream.cs" />
+    <Compile Include="WhenStoringEventsToAnExistingStream.cs" />
     <Compile Include="WhenStoringEventsWithoutATransactionStarted.cs" />
   </ItemGroup>
   <ItemGroup>
