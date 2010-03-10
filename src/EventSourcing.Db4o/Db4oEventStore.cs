@@ -76,7 +76,7 @@ namespace EventSourcing.Db4o
                 throw new Exception("Transaction already in progress");
             }
 
-            _transaction = new Db4oTransaction(_sessionFactory.GetCurrentSession());
+            _transaction = new Db4oTransaction(_sessionFactory.GetCurrentSession(), () => _transaction = null);
             return _transaction;
         }
     }
