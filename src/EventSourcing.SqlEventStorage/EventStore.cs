@@ -30,20 +30,32 @@ namespace EventSourcing.SqlEventStorage
         {
             EnsureTransaction();
 
-            var insertCmd = new SqlCommand(StoreEventsCommandText)
-                            {
-                                Connection = _transaction.SqlConnection, 
-                                Transaction = _transaction.SqlTransaction
-                            };
-
-            insertCmd.Parameters.AddWithValue("@StreamId", streamId);
-            insertCmd.Parameters.Add("@EventData", SqlDbType.VarBinary);
+            var data = new DataTable();
+            data.Columns.Add("StreamId").DataType = typeof (Guid);
+            data.Columns.Add("EventData").DataType = typeof (byte[]);
 
             foreach(var @event in stream)
             {
-                insertCmd.Parameters["@EventData"].Value = Serialize(@event);
-                insertCmd.ExecuteNonQuery();
+                data.Rows.Add(streamId, Serialize(@event));
             }
+
+            var insertCmd = new SqlCommand(StoreEventsCommandText)
+                            {
+                                Connection = _transaction.SqlConnection, 
+                                Transaction = _transaction.SqlTransaction,
+                                UpdatedRowSource = UpdateRowSource.None
+                            };
+
+            insertCmd.Parameters.Add("@StreamId",SqlDbType.UniqueIdentifier).SourceColumn = "StreamId";
+            insertCmd.Parameters.Add("@EventData",SqlDbType.VarBinary).SourceColumn = "EventData";
+
+            var dataAdapter = new SqlDataAdapter
+                              {
+                                  InsertCommand = insertCmd,
+                                  UpdateBatchSize = 0
+                              };
+
+            dataAdapter.Update(data);
         }
 
         public void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class
