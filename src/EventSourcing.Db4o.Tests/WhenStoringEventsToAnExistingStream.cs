@@ -22,7 +22,11 @@ namespace EventSourcing.Db4o.Tests
 
         protected override void When()
         {
-            _subjectUnderTest.StoreEvents(_streamId,_additionalEvents);
+            using(var trans = _subjectUnderTest.BeginTransaction())
+            {
+                _subjectUnderTest.StoreEvents(_streamId,_additionalEvents);
+                trans.Commit();
+            }
         }
     }
 }

@@ -19,6 +19,12 @@ namespace EventSourcing.Db4o.Tests
         }
 
         [Then]
+        public void ItShouldNotThrowAnException()
+        {
+            Assert.That(_caughtException,Is.Null);
+        }
+
+        [Then]
         public void ItShouldStoreTheEventsInTheDatabase()
         {
             using (var session = _sessionFactory.OpenSession())
