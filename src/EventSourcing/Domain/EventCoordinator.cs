@@ -95,7 +95,7 @@ namespace EventSourcing.Domain
                 var eventType = domainEvent.GetType();
                 if (!_eventHandlers.ContainsKey(eventType))
                 {
-                    throw new Exception(String.Format("No event handler is already registered for the event {0}", eventType.FullName));
+                    throw new Exception(String.Format("No event handler is registered for the event {0}", eventType.FullName));
                 }
 
                 _eventHandlers[eventType](domainEvent);
