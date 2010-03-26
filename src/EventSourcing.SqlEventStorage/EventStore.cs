@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using EventSourcing.EventStorage;
 
@@ -30,32 +31,49 @@ namespace EventSourcing.SqlEventStorage
         {
             EnsureTransaction();
 
-            var data = new DataTable();
-            data.Columns.Add("StreamId").DataType = typeof (Guid);
-            data.Columns.Add("EventData").DataType = typeof (byte[]);
-
-            foreach(var @event in stream)
+            if(stream.Count() == 0)
             {
-                data.Rows.Add(streamId, Serialize(@event));
+                return;
             }
 
             var insertCmd = new SqlCommand(StoreEventsCommandText)
-                            {
-                                Connection = _transaction.SqlConnection, 
-                                Transaction = _transaction.SqlTransaction,
-                                UpdatedRowSource = UpdateRowSource.None
-                            };
+            {
+                Connection = _transaction.SqlConnection,
+                Transaction = _transaction.SqlTransaction,
+                UpdatedRowSource = UpdateRowSource.None
+            };
 
-            insertCmd.Parameters.Add("@StreamId",SqlDbType.UniqueIdentifier).SourceColumn = "StreamId";
-            insertCmd.Parameters.Add("@EventData",SqlDbType.VarBinary).SourceColumn = "EventData";
+            insertCmd.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier);
+            insertCmd.Parameters.Add("@EventData", SqlDbType.VarBinary);
 
-            var dataAdapter = new SqlDataAdapter
-                              {
-                                  InsertCommand = insertCmd,
-                                  UpdateBatchSize = 0
-                              };
+            if(stream.Count() > 1)
+            {
+                insertCmd.Parameters["@StreamId"].SourceColumn = "StreamId";
+                insertCmd.Parameters["@EventData"].SourceColumn = "EventData";
 
-            dataAdapter.Update(data);
+                var data = new DataTable();
+                data.Columns.Add("StreamId").DataType = typeof(Guid);
+                data.Columns.Add("EventData").DataType = typeof(byte[]);
+
+                foreach (var @event in stream)
+                {
+                    data.Rows.Add(streamId, Serialize(@event));
+                }
+
+                var dataAdapter = new SqlDataAdapter
+                {
+                    InsertCommand = insertCmd,
+                    UpdateBatchSize = 0
+                };
+
+                dataAdapter.Update(data);
+            }
+            else
+            {
+                insertCmd.Parameters["@StreamId"].Value = streamId;
+                insertCmd.Parameters["@EventData"].Value = Serialize(stream.ElementAt(0));
+                insertCmd.ExecuteNonQuery();
+            }
         }
 
         public void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class
