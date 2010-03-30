@@ -18,6 +18,7 @@ CREATE TABLE [dbo].[EventStore]
 (
 [StreamId] [uniqueidentifier] NOT NULL,
 [Sequence] [int] NOT NULL IDENTITY(1, 1),
+[GeneratedOn] [datetime] NOT NULL DEFAULT (getutcdate()),
 [EventData] [varbinary] (max) NOT NULL
 )
 GO
@@ -33,13 +34,21 @@ IF @@ERROR<>0 AND @@TRANCOUNT>0 ROLLBACK TRANSACTION
 GO
 IF @@TRANCOUNT=0 BEGIN INSERT INTO #tmpErrors (Error) SELECT 1 BEGIN TRANSACTION END
 GO
+PRINT N'Creating index [IX_EventStore] on [dbo].[EventStore]'
+GO
+CREATE NONCLUSTERED INDEX [IX_EventStore] ON [dbo].[EventStore] ([StreamId], [GeneratedOn])
+GO
+IF @@ERROR<>0 AND @@TRANCOUNT>0 ROLLBACK TRANSACTION
+GO
+IF @@TRANCOUNT=0 BEGIN INSERT INTO #tmpErrors (Error) SELECT 1 BEGIN TRANSACTION END
+GO
 PRINT N'Creating [dbo].[SnapshotStore]'
 GO
 CREATE TABLE [dbo].[SnapshotStore]
 (
 [SourceId] [uniqueidentifier] NOT NULL,
 [SnapshotData] [varbinary] (max) NOT NULL,
-[timestamp] [timestamp] NOT NULL
+[version] [timestamp] NOT NULL
 )
 GO
 IF @@ERROR<>0 AND @@TRANCOUNT>0 ROLLBACK TRANSACTION

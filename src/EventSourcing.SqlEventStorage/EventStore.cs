@@ -11,11 +11,14 @@ namespace EventSourcing.SqlEventStorage
 {
     public class EventStore : IEventStore
     {
-        private const string StoreEventsCommandText = "insert into EventStore (StreamId, EventData) values (@StreamId,@EventData)";
+        private const string StoreEventCommandText = "insert into EventStore (StreamId, EventData) values (@StreamId,@EventData)";
         private const string StoreSnapshotCommandText = "insert into SnapshotStore (SourceId, SnapshotData) values (@SourceId, @SnapshotData)";
         private const string ReplayAllEvents = "select EventData from EventStore where StreamId = @StreamId order by Sequence";
         private const string ReplayEventsFromVersionForwardQuery = "with OrderedEvents as (select [EventData], row_number() over(order by Sequence) as 'RowNumber' from [EventStore] where [StreamId] = @StreamId) select [EventData] from OrderedEvents where RowNumber >= @Version";
-        private const string LoadSnapshotQuery = "select top 1 SnapshotData from SnapshotStore where SourceId = @SourceId order by timestamp desc";
+        private const string ReplayEventsFromVersionToVersionQuery = "with OrderedEvents as (select [EventData], row_number() over(order by Sequence) as 'RowNumber' from [EventStore] where [StreamId] = @StreamId) select [EventData] from OrderedEvents where RowNumber between @FromVersion and @ToVersion";
+        private const string ReplayEventsFromPointInTimeForwardQuery = "select [EventData] from [EventStore] where [StreamId] = @StreamId and GeneratedOn >= @FromPointInTime order by Sequence";
+        private const string ReplayEventsFromPointInTimeToPointInTimeQuery = "select [EventData] from [EventStore] where [StreamId] = @StreamId and GeneratedOn between @FromPointInTime and @ToPointInTime order by Sequence";
+        private const string LoadSnapshotQuery = "select top 1 SnapshotData from SnapshotStore where SourceId = @SourceId order by version desc";
 
         private readonly string _connectionString;
         private readonly IFormatter _formatter;
@@ -36,7 +39,7 @@ namespace EventSourcing.SqlEventStorage
                 return;
             }
 
-            var insertCmd = new SqlCommand(StoreEventsCommandText)
+            var insertCmd = new SqlCommand(StoreEventCommandText)
             {
                 Connection = _transaction.SqlConnection,
                 Transaction = _transaction.SqlTransaction,
@@ -113,6 +116,38 @@ namespace EventSourcing.SqlEventStorage
             queryCmd.Parameters.AddWithValue("@StreamId",streamId);
             queryCmd.Parameters.AddWithValue("@Version", fromVersion);
             return Replay<TEvent>(queryCmd);
+        }
+
+        public IEnumerable<TEvent> Replay<TEvent>(Guid streamId, int fromVersion, int toVersion) where TEvent : class
+        {
+            var queryCmd = new SqlCommand(ReplayEventsFromVersionToVersionQuery);
+            queryCmd.Parameters.AddWithValue("@StreamId", streamId);
+            queryCmd.Parameters.AddWithValue("@FromVersion", fromVersion);
+            queryCmd.Parameters.AddWithValue("@ToVersion", toVersion);
+            return Replay<TEvent>(queryCmd);
+        }
+
+        public IEnumerable<TEvent> Replay<TEvent>(Guid streamId, DateTimeOffset fromPointInTime) where TEvent : class
+        {
+            var queryCmd = new SqlCommand(ReplayEventsFromPointInTimeForwardQuery);
+            queryCmd.Parameters.AddWithValue("@StreamId", streamId);
+            queryCmd.Parameters.AddWithValue("@FromPointInTime", fromPointInTime.UtcDateTime);
+            return Replay<TEvent>(queryCmd);
+        }
+
+        public IEnumerable<TEvent> Replay<TEvent>(Guid streamId, DateTimeOffset fromPointInTime, DateTimeOffset toPointInTime) where TEvent : class
+        {
+            var queryCmd = new SqlCommand(ReplayEventsFromPointInTimeToPointInTimeQuery);
+            queryCmd.Parameters.AddWithValue("@StreamId", streamId);
+            queryCmd.Parameters.AddWithValue("@FromPointInTime", fromPointInTime.UtcDateTime);
+            queryCmd.Parameters.AddWithValue("@ToPointInTime", toPointInTime.UtcDateTime);
+            return Replay<TEvent>(queryCmd);
+        }
+
+        public IEnumerable<TEvent> Replay<TEvent>(Guid streamId, DateTimeOffset fromPointInTime, TimeSpan period) where TEvent : class
+        {
+            var toPointInTime = fromPointInTime + period;
+            return Replay<TEvent>(streamId, fromPointInTime, toPointInTime);
         }
 
         private List<TEvent> Replay<TEvent>(SqlCommand command) where TEvent : class
