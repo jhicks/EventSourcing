@@ -57,7 +57,7 @@
     <Compile Include="Domain\PropertyCreatedEvent.cs" />
     <Compile Include="Domain\WhenClosingTheProperty.cs" />
     <Compile Include="Domain\WhenCreatingAProperty.cs" />
-    <Compile Include="InContextOfTestingUnitOfWork.cs" />
+    <Compile Include="WhenCompletingATransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
