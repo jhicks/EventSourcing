@@ -34,8 +34,13 @@
     <Reference Include="nunit.framework">
       <HintPath>..\..\lib\nunit\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="Rhino.Mocks, Version=3.6.0.0, Culture=neutral, PublicKeyToken=0b3305902db7183f, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\Rhino.Mocks\Rhino.Mocks.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseTestFixture.cs" />
@@ -52,6 +57,7 @@
     <Compile Include="Domain\PropertyCreatedEvent.cs" />
     <Compile Include="Domain\WhenClosingTheProperty.cs" />
     <Compile Include="Domain\WhenCreatingAProperty.cs" />
+    <Compile Include="InContextOfTestingUnitOfWork.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
