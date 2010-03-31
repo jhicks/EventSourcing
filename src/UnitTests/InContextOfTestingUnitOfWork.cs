@@ -1,4 +1,3 @@
-using System;
 using System.Transactions;
 using EventSourcing.Domain;
 using EventSourcing.EventStorage;
@@ -12,25 +11,13 @@ using Property = UnitTests.Domain.Property;
 
 namespace UnitTests
 {
-    public abstract class InContextOfTestingUnitOfWork : BaseTestFixture<UnitOfWork>
-    {
-        protected IAggregateBuilder AggregateBuilderMock;
-        protected IEventStore EventStoreMock;
-        protected IEventHandlerFactory EventHandlerFactoryMock;
-
-        protected override void SetupDependencies()
-        {
-            base.SetupDependencies();
-            EventStoreMock = MockRepository.GenerateMock<IEventStore>();
-            AggregateBuilderMock = MockRepository.GenerateMock<IAggregateBuilder>();
-            EventHandlerFactoryMock = MockRepository.GenerateMock<IEventHandlerFactory>();
-            _subjectUnderTest = new UnitOfWork(EventStoreMock, AggregateBuilderMock, EventHandlerFactoryMock);
-        }
-    }
-
     [Specification]
-    public class WhenCompletingATransaction : InContextOfTestingUnitOfWork
+    public class WhenCompletingATransaction : BaseTestFixture<UnitOfWork>
     {
+        private IAggregateBuilder _aggregateBuilderMock;
+        private IEventStore _eventStoreMock;
+        private IEventHandlerFactory _eventHandlerFactoryMock;
+
         private TransactionScope _transactionScope;
         private IEventHandler<PropertyCreatedEvent> _handlerMock;
         private IAggregateRoot _aggregateRoot;
@@ -41,12 +28,16 @@ namespace UnitTests
             base.SetupDependencies();
             _aggregateRoot = Property.New();
 
+            _eventStoreMock = MockRepository.GenerateMock<IEventStore>();
+            _aggregateBuilderMock = MockRepository.GenerateMock<IAggregateBuilder>();
+            _eventHandlerFactoryMock = MockRepository.GenerateMock<IEventHandlerFactory>();
+            _subjectUnderTest = new UnitOfWork(_eventStoreMock, _aggregateBuilderMock, _eventHandlerFactoryMock);
 
-            EventStoreMock.Expect(x => x.StoreEvents(_aggregateRoot.Id, new IDomainEvent[0])).Constraints(Rhino.Mocks.Constraints.Is.Equal(_aggregateRoot.Id), Rhino.Mocks.Constraints.Is.Anything());
+            _eventStoreMock.Expect(x => x.StoreEvents(_aggregateRoot.Id, new IDomainEvent[0])).Constraints(Rhino.Mocks.Constraints.Is.Equal(_aggregateRoot.Id), Rhino.Mocks.Constraints.Is.Anything());
 
             _handlerMock = MockRepository.GenerateMock<IEventHandler<PropertyCreatedEvent>>();
             _handlerMock.Expect(x => x.Handle(null)).Constraints(new Anything());
-            EventHandlerFactoryMock.Expect(x => x.ResolveHandlers<PropertyCreatedEvent>()).Return(new[] {_handlerMock});
+            _eventHandlerFactoryMock.Expect(x => x.ResolveHandlers<PropertyCreatedEvent>()).Return(new[] {_handlerMock});
 
             _subjectUnderTest.Add(_aggregateRoot);
         }
@@ -60,13 +51,13 @@ namespace UnitTests
         [Then]
         public void ItShouldStoreTheEventsInTheEventStore()
         {
-            EventStoreMock.VerifyAllExpectations();
+            _eventStoreMock.VerifyAllExpectations();
         }
 
         [Then]
         public void ItShouldGetEventHandlersFromTheEventHandlerFactory()
         {
-            Assert.DoesNotThrow(EventHandlerFactoryMock.VerifyAllExpectations);
+            Assert.DoesNotThrow(_eventHandlerFactoryMock.VerifyAllExpectations);
         }
 
         [Then]
