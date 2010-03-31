@@ -15,15 +15,6 @@ namespace EventSourcing.Infrastructure
         private readonly IEventStore _eventStore;
         private readonly IAggregateBuilder _aggregateBuilder;
         private readonly IEventHandlerFactory _eventHandlerFactory;
-        private readonly MethodInfo _handlerFactoryResolverType;
-        private static readonly Type EventHandlerTypeInfo;
-        private static readonly MethodInfo EventHandlerHandleMethodInfo;
-
-        static UnitOfWork()
-        {
-            EventHandlerTypeInfo = typeof(IEventHandler<>);
-            EventHandlerHandleMethodInfo = EventHandlerTypeInfo.GetMethod("Handle");
-        }
 
         public UnitOfWork(IEventStore eventStore, IAggregateBuilder aggregateBuilder, IEventHandlerFactory eventHandlerFactory)
         {
@@ -35,8 +26,6 @@ namespace EventSourcing.Infrastructure
             _aggregateBuilder = aggregateBuilder;
             _eventHandlerFactory = eventHandlerFactory;
             _identityMap = new Dictionary<Guid, IAggregateRoot>();
-
-            _handlerFactoryResolverType = _eventHandlerFactory.GetType().GetMethod("ResolveHandlers").GetGenericMethodDefinition();
         }
 
         private static void EnsureTransaction()
@@ -120,16 +109,20 @@ namespace EventSourcing.Infrastructure
 
         private void RaiseEvents(IEnumerable<IDomainEvent> domainEvents)
         {
+            var callHandlersMethodInfo = GetType().GetMethod("CallHandlers", BindingFlags.Instance | BindingFlags.NonPublic);
+
             foreach (var @event in domainEvents)
             {
-                var method = _handlerFactoryResolverType.MakeGenericMethod(@event.GetType());
-                var handlers = (IEnumerable)method.Invoke(_eventHandlerFactory, null);
-
-                foreach (var handler in handlers)
-                {
-                    EventHandlerHandleMethodInfo.Invoke(handler, new[] { @event });
-                }
+                var methodInfo = callHandlersMethodInfo.MakeGenericMethod(@event.GetType());
+                methodInfo.Invoke(this, new[] {@event});
             }
+        }
+
+        // called through reflection - DON'T DELETE ME JUST BECAUSE RESHARPER TELLS YOU I AM NOT USED
+        private void CallHandlers<TDomainEvent>(TDomainEvent domainEvent) where TDomainEvent : IDomainEvent
+        {
+            var handlers = _eventHandlerFactory.ResolveHandlers<TDomainEvent>();
+            handlers.ForEach(x => x.Handle(domainEvent));
         }
 
         private void StoreSnapshot(IAggregateRoot aggregateRoot)
