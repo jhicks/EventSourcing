@@ -47,6 +47,8 @@
     <Compile Include="Domain\IAggregateRoot.cs" />
     <Compile Include="Domain\IEntity.cs" />
     <Compile Include="Domain\IRepository.cs" />
+    <Compile Include="Infrastructure\IEventHandler.cs" />
+    <Compile Include="Infrastructure\IEventHandlerFactory.cs" />
     <Compile Include="Infrastructure\Repository.cs" />
     <Compile Include="EventStorage\IEventStore.cs" />
     <Compile Include="Infrastructure\IUnitOfWork.cs" />

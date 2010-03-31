@@ -9,16 +9,6 @@ using EventSourcing.EventStorage;
 
 namespace EventSourcing.Infrastructure
 {
-    public interface IEventHandler<TDomainEvent> where TDomainEvent : IDomainEvent
-    {
-        void Handle(TDomainEvent @event);
-    }
-
-    public interface IEventHandlerFactory
-    {
-        IEnumerable<IEventHandler<TDomainEvent>> ResolveHandlers<TDomainEvent>() where TDomainEvent : IDomainEvent;
-    }
-
     public class UnitOfWork : IUnitOfWork, IEnlistmentNotification
     {
         private readonly Dictionary<Guid, IAggregateRoot> _identityMap;
@@ -108,40 +98,51 @@ namespace EventSourcing.Infrastructure
 
         void IEnlistmentNotification.Commit(Enlistment enlistment)
         {
-            _identityMap.Values.ForEach(ar =>
-            {
-                var eventsToCommit = ar.FlushEvents();
-
-                if (eventsToCommit.Count() == 0)
-                {
-                    return;
-                }
-
-                _eventStore.StoreEvents(ar.Id, eventsToCommit);
-
-                var snapshotProvider = ar as ISnapshotProvider;
-
-                if(snapshotProvider != null && ar.Version % snapshotProvider.SnapshotInterval == 0)
-                {
-                    var snapshot = snapshotProvider.Snapshot();
-                    _eventStore.StoreSnapshot(ar.Id,snapshot);
-                }
-                
-                foreach(var @event in eventsToCommit)
-                {
-                    var method = _handlerFactoryResolverType.MakeGenericMethod(@event.GetType());
-                    var handlers = (IEnumerable)method.Invoke(_eventHandlerFactory,null);
-
-                    foreach(var handler in handlers)
-                    {
-                        EventHandlerHandleMethodInfo.Invoke(handler,new [] {@event});
-                    }
-                }
-            });
-
+            _identityMap.Values.ForEach(CommitAggregateRoot);
             _identityMap.Clear();
-
             enlistment.Done();
+        }
+
+        private void CommitAggregateRoot(IAggregateRoot aggregateRoot)
+        {
+            var eventsToCommit = aggregateRoot.FlushEvents();
+
+            if (eventsToCommit.Count() == 0)
+            {
+                return;
+            }
+
+            _eventStore.StoreEvents(aggregateRoot.Id, eventsToCommit);
+
+            StoreSnapshot(aggregateRoot);
+            RaiseEvents(eventsToCommit);
+        }
+
+        private void RaiseEvents(IEnumerable<IDomainEvent> domainEvents)
+        {
+            foreach (var @event in domainEvents)
+            {
+                var method = _handlerFactoryResolverType.MakeGenericMethod(@event.GetType());
+                var handlers = (IEnumerable)method.Invoke(_eventHandlerFactory, null);
+
+                foreach (var handler in handlers)
+                {
+                    EventHandlerHandleMethodInfo.Invoke(handler, new[] { @event });
+                }
+            }
+        }
+
+        private void StoreSnapshot(IAggregateRoot aggregateRoot)
+        {
+            var snapshotProvider = aggregateRoot as ISnapshotProvider;
+
+            if (snapshotProvider == null || aggregateRoot.Version % snapshotProvider.SnapshotInterval != 0)
+            {
+                return;
+            }
+
+            var snapshot = snapshotProvider.Snapshot();
+            _eventStore.StoreSnapshot(aggregateRoot.Id, snapshot);
         }
 
         void IEnlistmentNotification.Rollback(Enlistment enlistment)
