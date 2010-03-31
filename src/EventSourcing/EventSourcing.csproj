@@ -33,6 +33,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Domain\EventCoordinator.cs" />
@@ -48,7 +49,6 @@
     <Compile Include="Domain\IRepository.cs" />
     <Compile Include="Infrastructure\Repository.cs" />
     <Compile Include="EventStorage\IEventStore.cs" />
-    <Compile Include="EventStorage\ITransaction.cs" />
     <Compile Include="Infrastructure\IUnitOfWork.cs" />
     <Compile Include="Infrastructure\UnitOfWork.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

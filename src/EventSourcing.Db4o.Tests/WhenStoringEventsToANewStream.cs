@@ -7,11 +7,7 @@ namespace EventSourcing.Db4o.Tests
     {
         protected override void When()
         {
-            using(var transaction = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreEvents(_streamId, _events);
-                transaction.Commit();
-            }
+            _subjectUnderTest.StoreEvents(_streamId, _events);
         }
     }
 }

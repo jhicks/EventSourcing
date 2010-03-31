@@ -20,20 +20,12 @@ namespace EventSourcing.Db4o.Tests
             _originalSnapshot = "Snapshot - " + new Random().Next();
             _newSnapshot = "Snapshot - " + new Random().Next();
 
-            using(var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreSnapshot(_sourceId,_originalSnapshot);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreSnapshot(_sourceId,_originalSnapshot);
         }
 
         protected override void When()
         {
-            using (var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreSnapshot(_sourceId, _newSnapshot);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreSnapshot(_sourceId, _newSnapshot);
         }
 
         [Then]

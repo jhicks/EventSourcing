@@ -21,11 +21,7 @@ namespace EventSourcing.SqlEventStorage.Tests
 
         protected override void When()
         {
-            using(var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreEvents(_streamId,_events);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreEvents(_streamId,_events);
         }
 
         [Then]

@@ -52,7 +52,6 @@
     <Compile Include="Db4oEvent.cs" />
     <Compile Include="Db4oEventStore.cs" />
     <Compile Include="Db4oSnapshot.cs" />
-    <Compile Include="Db4oTransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SequenceGenerator.cs" />
   </ItemGroup>

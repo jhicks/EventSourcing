@@ -1,26 +1,66 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Transactions;
 using EventSourcing.Domain;
 using EventSourcing.EventStorage;
 
 namespace EventSourcing.Infrastructure
 {
-    public class UnitOfWork : IUnitOfWork
+    public interface IEventHandler<TDomainEvent> where TDomainEvent : IDomainEvent
+    {
+        void Handle(TDomainEvent @event);
+    }
+
+    public interface IEventHandlerFactory
+    {
+        IEnumerable<IEventHandler<TDomainEvent>> ResolveHandlers<TDomainEvent>() where TDomainEvent : IDomainEvent;
+    }
+
+    public class UnitOfWork : IUnitOfWork, IEnlistmentNotification
     {
         private readonly Dictionary<Guid, IAggregateRoot> _identityMap;
         private readonly IEventStore _eventStore;
         private readonly IAggregateBuilder _aggregateBuilder;
+        private readonly IEventHandlerFactory _eventHandlerFactory;
+        private readonly MethodInfo _handlerFactoryResolverType;
+        private static readonly Type EventHandlerTypeInfo;
+        private static readonly MethodInfo EventHandlerHandleMethodInfo;
 
-        public UnitOfWork(IEventStore eventStore, IAggregateBuilder aggregateBuilder)
+        static UnitOfWork()
         {
+            EventHandlerTypeInfo = typeof(IEventHandler<>);
+            EventHandlerHandleMethodInfo = EventHandlerTypeInfo.GetMethod("Handle");
+        }
+
+        public UnitOfWork(IEventStore eventStore, IAggregateBuilder aggregateBuilder, IEventHandlerFactory eventHandlerFactory)
+        {
+            EnsureTransaction();
+
+            Transaction.Current.EnlistVolatile(this, EnlistmentOptions.None);
+
             _eventStore = eventStore;
             _aggregateBuilder = aggregateBuilder;
+            _eventHandlerFactory = eventHandlerFactory;
             _identityMap = new Dictionary<Guid, IAggregateRoot>();
+
+            _handlerFactoryResolverType = _eventHandlerFactory.GetType().GetMethod("ResolveHandlers").GetGenericMethodDefinition();
+        }
+
+        private static void EnsureTransaction()
+        {
+            if(Transaction.Current == null)
+            {
+                throw new InvalidOperationException("A running transaction is required");
+            }
         }
 
         public TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot
         {
+            EnsureTransaction();
+
             if (_identityMap.ContainsKey(id))
             {
                 return (TAggregateRoot)_identityMap[id];
@@ -31,6 +71,8 @@ namespace EventSourcing.Infrastructure
 
         private TAggregateRoot Load<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot
         {
+            EnsureTransaction();
+
             var isSnapshotable = typeof(ISnapshotProvider).IsAssignableFrom(typeof(TAggregateRoot));
             var snapshot =  isSnapshotable ? _eventStore.LoadSnapshot<ISnapshot>(id) : null;
 
@@ -55,44 +97,62 @@ namespace EventSourcing.Infrastructure
 
         public void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : class, IAggregateRoot
         {
+            EnsureTransaction();
             _identityMap.Add(aggregateRoot.Id, aggregateRoot);
         }
 
-        public void Commit(Action<IEnumerable<IDomainEvent>> action)
+        void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)
         {
-            using (var transaction = _eventStore.BeginTransaction())
-            {
-                _identityMap.Values.ForEach(ar => CommitAggregate(ar,action));
-                transaction.Commit();
-                _identityMap.Clear();
-            }
+            preparingEnlistment.Prepared();
         }
 
-        private void CommitAggregate(IAggregateRoot aggregateRoot, Action<IEnumerable<IDomainEvent>> action)
+        void IEnlistmentNotification.Commit(Enlistment enlistment)
         {
-            var eventsToCommit = aggregateRoot.FlushEvents();
-
-            if (eventsToCommit.Count() == 0)
+            _identityMap.Values.ForEach(ar =>
             {
-                return;
-            }
+                var eventsToCommit = ar.FlushEvents();
 
-            _eventStore.StoreEvents(aggregateRoot.Id, eventsToCommit);
+                if (eventsToCommit.Count() == 0)
+                {
+                    return;
+                }
 
-            var snapshotProvider = aggregateRoot as ISnapshotProvider;
+                _eventStore.StoreEvents(ar.Id, eventsToCommit);
 
-            if(snapshotProvider != null && aggregateRoot.Version % snapshotProvider.SnapshotInterval == 0)
-            {
-                var snapshot = snapshotProvider.Snapshot();
-                _eventStore.StoreSnapshot(aggregateRoot.Id,snapshot);
-            }
+                var snapshotProvider = ar as ISnapshotProvider;
 
-            action(eventsToCommit);
+                if(snapshotProvider != null && ar.Version % snapshotProvider.SnapshotInterval == 0)
+                {
+                    var snapshot = snapshotProvider.Snapshot();
+                    _eventStore.StoreSnapshot(ar.Id,snapshot);
+                }
+                
+                foreach(var @event in eventsToCommit)
+                {
+                    var method = _handlerFactoryResolverType.MakeGenericMethod(@event.GetType());
+                    var handlers = (IEnumerable)method.Invoke(_eventHandlerFactory,null);
+
+                    foreach(var handler in handlers)
+                    {
+                        EventHandlerHandleMethodInfo.Invoke(handler,new [] {@event});
+                    }
+                }
+            });
+
+            _identityMap.Clear();
+
+            enlistment.Done();
         }
 
-        public void Rollback()
+        void IEnlistmentNotification.Rollback(Enlistment enlistment)
         {
             _identityMap.Clear();
+            enlistment.Done();
+        }
+
+        void IEnlistmentNotification.InDoubt(Enlistment enlistment)
+        {
+            enlistment.Done();
         }
     }
 }

@@ -12,21 +12,13 @@ namespace EventSourcing.Db4o.Tests
         {
             base.SetupDependencies();
             _additionalEvents = new [] {"6","7","8","9","10","11"};
-            using(var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreEvents(_streamId, _events);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreEvents(_streamId, _events);
             _events = _events.Concat(_additionalEvents).ToArray();
         }
 
         protected override void When()
         {
-            using(var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreEvents(_streamId,_additionalEvents);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreEvents(_streamId,_additionalEvents);
         }
     }
 }

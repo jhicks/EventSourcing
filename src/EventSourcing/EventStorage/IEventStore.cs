@@ -15,7 +15,5 @@ namespace EventSourcing.EventStorage
 
         void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class;
         TSnapshot LoadSnapshot<TSnapshot>(Guid sourceId) where TSnapshot : class;
-
-        ITransaction BeginTransaction();
     }
 }

@@ -16,11 +16,7 @@ namespace EventSourcing.Db4o.Tests
             base.SetupDependencies();
             _sourceId = Guid.NewGuid();
             _snapshot = "this is a test";
-            using(var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreSnapshot(_sourceId,_snapshot);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreSnapshot(_sourceId,_snapshot);
         }
 
         protected override void When()

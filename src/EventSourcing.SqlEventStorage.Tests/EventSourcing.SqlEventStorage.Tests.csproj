@@ -41,6 +41,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InContextOfReplayingEventsFromTheSqlEventStore.cs" />
@@ -51,9 +52,7 @@
     <Compile Include="WhenReplayingEventsFromAVersion.cs" />
     <Compile Include="WhenRollingBackATransaction.cs" />
     <Compile Include="WhenStoringASnapshot.cs" />
-    <Compile Include="WhenStoringASnapshotWithoutATransactionStarted.cs" />
     <Compile Include="WhenStoringEvents.cs" />
-    <Compile Include="WhenStoringEventsWithoutATransactionStarted.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventSourcing.SqlEventStorage\EventSourcing.SqlEventStorage.csproj">

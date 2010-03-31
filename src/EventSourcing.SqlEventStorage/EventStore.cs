@@ -22,7 +22,6 @@ namespace EventSourcing.SqlEventStorage
 
         private readonly string _connectionString;
         private readonly IFormatter _formatter;
-        private Transaction _transaction;
 
         public EventStore(string connectionString, IFormatter formatter)
         {
@@ -32,74 +31,69 @@ namespace EventSourcing.SqlEventStorage
 
         public void StoreEvents<TEvent>(Guid streamId, IEnumerable<TEvent> stream) where TEvent : class
         {
-            EnsureTransaction();
-
             if(stream.Count() == 0)
             {
                 return;
             }
 
-            var insertCmd = new SqlCommand(StoreEventCommandText)
+            using(var con = new SqlConnection(_connectionString))
             {
-                Connection = _transaction.SqlConnection,
-                Transaction = _transaction.SqlTransaction,
-                UpdatedRowSource = UpdateRowSource.None
-            };
+                con.Open();
 
-            insertCmd.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier);
-            insertCmd.Parameters.Add("@EventData", SqlDbType.VarBinary);
+                var insertCmd = con.CreateCommand();
+                insertCmd.CommandText = StoreEventCommandText;
+                insertCmd.UpdatedRowSource = UpdateRowSource.None;
 
-            if(stream.Count() > 1)
-            {
-                insertCmd.Parameters["@StreamId"].SourceColumn = "StreamId";
-                insertCmd.Parameters["@EventData"].SourceColumn = "EventData";
 
-                var data = new DataTable();
-                data.Columns.Add("StreamId").DataType = typeof(Guid);
-                data.Columns.Add("EventData").DataType = typeof(byte[]);
+                insertCmd.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier);
+                insertCmd.Parameters.Add("@EventData", SqlDbType.VarBinary);
 
-                foreach (var @event in stream)
+                if(stream.Count() > 1)
                 {
-                    data.Rows.Add(streamId, Serialize(@event));
+                    insertCmd.Parameters["@StreamId"].SourceColumn = "StreamId";
+                    insertCmd.Parameters["@EventData"].SourceColumn = "EventData";
+
+                    var data = new DataTable();
+                    data.Columns.Add("StreamId").DataType = typeof(Guid);
+                    data.Columns.Add("EventData").DataType = typeof(byte[]);
+
+                    foreach (var @event in stream)
+                    {
+                        data.Rows.Add(streamId, Serialize(@event));
+                    }
+
+                    var dataAdapter = new SqlDataAdapter
+                                      {
+                                          InsertCommand = insertCmd,
+                                          UpdateBatchSize = 0
+                                      };
+
+                    dataAdapter.Update(data);
+                }
+                else
+                {
+                    insertCmd.Parameters["@StreamId"].Value = streamId;
+                    insertCmd.Parameters["@EventData"].Value = Serialize(stream.ElementAt(0));
+                    insertCmd.ExecuteNonQuery();
                 }
 
-                var dataAdapter = new SqlDataAdapter
-                {
-                    InsertCommand = insertCmd,
-                    UpdateBatchSize = 0
-                };
-
-                dataAdapter.Update(data);
-            }
-            else
-            {
-                insertCmd.Parameters["@StreamId"].Value = streamId;
-                insertCmd.Parameters["@EventData"].Value = Serialize(stream.ElementAt(0));
-                insertCmd.ExecuteNonQuery();
+                con.Close();
             }
         }
 
         public void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class
         {
-            EnsureTransaction();
-
-            var insertCmd = new SqlCommand(StoreSnapshotCommandText)
-                            {
-                                Connection = _transaction.SqlConnection, 
-                                Transaction = _transaction.SqlTransaction
-                            };
-
-            insertCmd.Parameters.AddWithValue("@SourceId", sourceId);
-            insertCmd.Parameters.AddWithValue("@SnapshotData", Serialize(snapshot));
-
-            insertCmd.ExecuteNonQuery();
-        }
-
-        private void EnsureTransaction()
-        {
-            if(_transaction == null)
+            using(var con = new SqlConnection(_connectionString))
             {
-                throw new InvalidOperationException("Transaction is required.  Call BeginTransaction");
+                con.Open();
+
+                var insertCmd = con.CreateCommand();
+                insertCmd.CommandText = StoreSnapshotCommandText;
+                insertCmd.Parameters.AddWithValue("@SourceId", sourceId);
+                insertCmd.Parameters.AddWithValue("@SnapshotData", Serialize(snapshot));
+                insertCmd.ExecuteNonQuery();
+
+                con.Close();
             }
         }
 
@@ -214,24 +208,6 @@ namespace EventSourcing.SqlEventStorage
                     return Deserialize<TSnapshot>(data);
                 }
             }
-        }
-
-        public ITransaction BeginTransaction()
-        {
-            if(_transaction != null)
-            {
-                throw new InvalidOperationException("Transaction already in progress");
-            }
-
-            var connection = new SqlConnection(_connectionString);
-            connection.Open();
-            _transaction = new Transaction(connection, () =>
-            {
-                _transaction = null;
-                connection.Close();
-            });
-
-            return _transaction;
         }
 
         private TObject Deserialize<TObject>(byte[] data)

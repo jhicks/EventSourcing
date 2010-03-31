@@ -41,7 +41,6 @@
   <ItemGroup>
     <Compile Include="EventStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Transaction.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventSourcing\EventSourcing.csproj">

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.SqlClient;
+using System.Transactions;
 using NUnit.Framework;
 using UnitTests;
 
@@ -8,14 +9,14 @@ namespace EventSourcing.SqlEventStorage.Tests
     [Specification]
     public class WhenRollingBackATransaction : InContextOfTestingTheSqlEventStore
     {
-        private Transaction _transaction;
+        private TransactionScope _transaction;
         private Guid _streamId;
         private Guid _sourceId;
         protected override void SetupDependencies()
         {
-            base.SetupDependencies();
+            _transaction = new TransactionScope();
 
-            _transaction = _subjectUnderTest.BeginTransaction() as Transaction;
+            base.SetupDependencies();
 
             _streamId = Guid.NewGuid();
             _sourceId = Guid.NewGuid();
@@ -26,7 +27,7 @@ namespace EventSourcing.SqlEventStorage.Tests
 
         protected override void When()
         {
-            _transaction.Rollback();
+            _transaction.Dispose();
         }
 
         [Then]

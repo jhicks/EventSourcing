@@ -11,7 +11,6 @@ namespace EventSourcing.Db4o
     public class Db4oEventStore : IEventStore
     {
         private readonly ISessionFactory _sessionFactory;
-        private Db4oTransaction _transaction;
 
         public Db4oEventStore(ISessionFactory sessionFactory)
         {
@@ -20,8 +19,6 @@ namespace EventSourcing.Db4o
 
         public void StoreEvents<TEvent>(Guid streamId, IEnumerable<TEvent> stream) where TEvent : class
         {
-            EnsureTransaction();
-
             var currentSession = _sessionFactory.GetCurrentSession();
             var sequenceGenerator = currentSession.AsQueryable<SequenceGenerator>().SingleOrDefault(x => x.StreamId == streamId) ?? new SequenceGenerator(streamId);
 
@@ -33,18 +30,8 @@ namespace EventSourcing.Db4o
             currentSession.Store(sequenceGenerator);
         }
 
-        private void EnsureTransaction()
-        {
-            if(_transaction == null)
-            {
-                throw new InvalidOperationException("Open transaction is required");
-            }
-        }
-
         public void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class
         {
-            EnsureTransaction();
-
             var session = _sessionFactory.GetCurrentSession();
             var currentSnapshot = session.AsQueryable<Db4oSnapshot<TSnapshot>>().SingleOrDefault(x => x.Source == sourceId) ?? new Db4oSnapshot<TSnapshot> {Source = sourceId};
             currentSnapshot.Snapshot = snapshot;
@@ -92,17 +79,6 @@ namespace EventSourcing.Db4o
             var session = _sessionFactory.GetCurrentSession();
             var snapshot = session.AsQueryable<Db4oSnapshot<TSnapshot>>().SingleOrDefault(x => x.Source == sourceId);
             return snapshot == null ? null : snapshot.Snapshot;
-        }
-
-        public ITransaction BeginTransaction()
-        {
-            if(_transaction != null)
-            {
-                throw new Exception("Transaction already in progress");
-            }
-
-            _transaction = new Db4oTransaction(_sessionFactory.GetCurrentSession(), () => _transaction = null);
-            return _transaction;
         }
     }
 }

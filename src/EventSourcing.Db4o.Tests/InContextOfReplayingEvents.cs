@@ -14,11 +14,7 @@ namespace EventSourcing.Db4o.Tests
             _streamId = Guid.NewGuid();
             _events = new[] { "1", "2", "3", "4", "5" };
 
-            using (var trans = _subjectUnderTest.BeginTransaction())
-            {
-                _subjectUnderTest.StoreEvents(_streamId, _events);
-                trans.Commit();
-            }
+            _subjectUnderTest.StoreEvents(_streamId, _events);
         }
     }
 }
