@@ -10,16 +10,21 @@ namespace EventSourcing.Db4o
 {
     public class Db4oEventStore : IEventStore
     {
-        private readonly ISessionFactory _sessionFactory;
+        private readonly Func<ISession> _sessionFactory;
 
         public Db4oEventStore(ISessionFactory sessionFactory)
+            : this(() => sessionFactory.HasBoundSession() ? sessionFactory.GetCurrentSession() : sessionFactory.OpenSession())
+        {
+        }
+
+        public Db4oEventStore(Func<ISession> sessionFactory)
         {
             _sessionFactory = sessionFactory;
         }
 
         private ISession GetSession()
         {
-            return _sessionFactory.HasBoundSession() ? _sessionFactory.GetCurrentSession() : _sessionFactory.OpenSession();
+            return _sessionFactory();
         }
 
         public void StoreEvents<TEvent>(Guid streamId, IEnumerable<TEvent> stream) where TEvent : class
