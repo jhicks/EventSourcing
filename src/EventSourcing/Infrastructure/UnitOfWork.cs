@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -20,7 +19,7 @@ namespace EventSourcing.Infrastructure
         {
             EnsureTransaction();
 
-            Transaction.Current.EnlistVolatile(this, EnlistmentOptions.None);
+            Transaction.Current.EnlistVolatile(this, EnlistmentOptions.EnlistDuringPrepareRequired);
 
             _eventStore = eventStore;
             _aggregateBuilder = aggregateBuilder;
@@ -82,12 +81,12 @@ namespace EventSourcing.Infrastructure
 
         void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)
         {
+            _identityMap.Values.ForEach(CommitAggregateRoot);
             preparingEnlistment.Prepared();
         }
 
         void IEnlistmentNotification.Commit(Enlistment enlistment)
         {
-            _identityMap.Values.ForEach(CommitAggregateRoot);
             _identityMap.Clear();
             enlistment.Done();
         }
@@ -111,9 +110,16 @@ namespace EventSourcing.Infrastructure
         {
             var callHandlersMethodInfo = GetType().GetMethod("CallHandlers", BindingFlags.Instance | BindingFlags.NonPublic);
 
+            var typeMap = new Dictionary<Type, MethodInfo>();
+
             foreach (var @event in domainEvents)
             {
-                var methodInfo = callHandlersMethodInfo.MakeGenericMethod(@event.GetType());
+                MethodInfo methodInfo;
+                if(!typeMap.TryGetValue(@event.GetType(), out methodInfo))
+                {
+                    methodInfo = callHandlersMethodInfo.MakeGenericMethod(@event.GetType());
+                    typeMap.Add(@event.GetType(),methodInfo);
+                }
                 methodInfo.Invoke(this, new[] {@event});
             }
         }
