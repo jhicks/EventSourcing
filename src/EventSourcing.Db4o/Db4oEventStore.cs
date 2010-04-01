@@ -17,9 +17,14 @@ namespace EventSourcing.Db4o
             _sessionFactory = sessionFactory;
         }
 
+        private ISession GetSession()
+        {
+            return _sessionFactory.HasBoundSession() ? _sessionFactory.GetCurrentSession() : _sessionFactory.OpenSession();
+        }
+
         public void StoreEvents<TEvent>(Guid streamId, IEnumerable<TEvent> stream) where TEvent : class
         {
-            var currentSession = _sessionFactory.GetCurrentSession();
+            var currentSession = GetSession();
             var sequenceGenerator = currentSession.AsQueryable<SequenceGenerator>().SingleOrDefault(x => x.StreamId == streamId) ?? new SequenceGenerator(streamId);
 
             foreach(var @event in stream)
@@ -32,7 +37,7 @@ namespace EventSourcing.Db4o
 
         public void StoreSnapshot<TSnapshot>(Guid sourceId, TSnapshot snapshot) where TSnapshot : class
         {
-            var session = _sessionFactory.GetCurrentSession();
+            var session = GetSession();
             var currentSnapshot = session.AsQueryable<Db4oSnapshot<TSnapshot>>().SingleOrDefault(x => x.Source == sourceId) ?? new Db4oSnapshot<TSnapshot> {Source = sourceId};
             currentSnapshot.Snapshot = snapshot;
             session.Store(currentSnapshot);
@@ -40,7 +45,7 @@ namespace EventSourcing.Db4o
 
         private IEnumerable<TEvent> Query<TEvent>(Expression<Func<Db4oEvent<TEvent>, bool>> query) where TEvent : class
         {
-            return _sessionFactory.GetCurrentSession().AsQueryable<Db4oEvent<TEvent>>().Where(query).OrderBy(x => x.Sequence).Select(x => x.Event);
+            return GetSession().AsQueryable<Db4oEvent<TEvent>>().Where(query).OrderBy(x => x.Sequence).Select(x => x.Event);
         }
 
         public IEnumerable<TEvent> Replay<TEvent>(Guid streamId) where TEvent : class
@@ -76,7 +81,7 @@ namespace EventSourcing.Db4o
 
         public TSnapshot LoadSnapshot<TSnapshot>(Guid sourceId) where TSnapshot : class
         {
-            var session = _sessionFactory.GetCurrentSession();
+            var session = GetSession();
             var snapshot = session.AsQueryable<Db4oSnapshot<TSnapshot>>().SingleOrDefault(x => x.Source == sourceId);
             return snapshot == null ? null : snapshot.Snapshot;
         }
