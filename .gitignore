@@ -2,3 +2,8 @@ build_output
 code_drop
 *.sln.cache
 SolutionVersion.cs
+*.ReSharper.user
+_ReSharper.*
+bin
+obj
+EventSourcing.suo
