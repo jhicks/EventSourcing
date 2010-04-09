@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.SqlEventStora
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.SqlEventStorage.Tests", "EventSourcing.SqlEventStorage.Tests\EventSourcing.SqlEventStorage.Tests.csproj", "{5324B2F3-6241-4DF1-BCA4-9538D7E30096}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.SqliteEventStorage", "EventSourcing.SqliteEventStorage\EventSourcing.SqliteEventStorage.csproj", "{719041DF-FAAA-40F6-A9EE-17ECB3FA086E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.SqliteEventStorage.Tests", "EventSourcing.SqliteEventStorage.Tests\EventSourcing.SqliteEventStorage.Tests.csproj", "{ACE9182D-FBC1-4262-A7FA-AF9A7EC858A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +47,14 @@ Global
 		{5324B2F3-6241-4DF1-BCA4-9538D7E30096}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5324B2F3-6241-4DF1-BCA4-9538D7E30096}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5324B2F3-6241-4DF1-BCA4-9538D7E30096}.Release|Any CPU.Build.0 = Release|Any CPU
+		{719041DF-FAAA-40F6-A9EE-17ECB3FA086E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{719041DF-FAAA-40F6-A9EE-17ECB3FA086E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{719041DF-FAAA-40F6-A9EE-17ECB3FA086E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{719041DF-FAAA-40F6-A9EE-17ECB3FA086E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACE9182D-FBC1-4262-A7FA-AF9A7EC858A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACE9182D-FBC1-4262-A7FA-AF9A7EC858A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACE9182D-FBC1-4262-A7FA-AF9A7EC858A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACE9182D-FBC1-4262-A7FA-AF9A7EC858A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
