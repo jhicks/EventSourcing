@@ -8,7 +8,7 @@ using EventSourcing.EventStorage;
 
 namespace EventSourcing.Infrastructure
 {
-    public class UnitOfWork : IUnitOfWork, IEnlistmentNotification
+    public class UnitOfWork : IUnitOfWork//, IEnlistmentNotification
     {
         private readonly Dictionary<Guid, IAggregateRoot> _identityMap;
         private readonly IEventStore _eventStore;
@@ -17,28 +17,14 @@ namespace EventSourcing.Infrastructure
 
         public UnitOfWork(IEventStore eventStore, IAggregateBuilder aggregateBuilder, IEventHandlerFactory eventHandlerFactory)
         {
-            EnsureTransaction();
-
-            Transaction.Current.EnlistVolatile(this, EnlistmentOptions.EnlistDuringPrepareRequired);
-
             _eventStore = eventStore;
             _aggregateBuilder = aggregateBuilder;
             _eventHandlerFactory = eventHandlerFactory;
             _identityMap = new Dictionary<Guid, IAggregateRoot>();
         }
 
-        private static void EnsureTransaction()
-        {
-            if(Transaction.Current == null)
-            {
-                throw new InvalidOperationException("A running transaction is required");
-            }
-        }
-
         public TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot
         {
-            EnsureTransaction();
-
             if (_identityMap.ContainsKey(id))
             {
                 return (TAggregateRoot)_identityMap[id];
@@ -49,8 +35,6 @@ namespace EventSourcing.Infrastructure
 
         private TAggregateRoot Load<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot
         {
-            EnsureTransaction();
-
             var isSnapshotable = typeof(ISnapshotProvider).IsAssignableFrom(typeof(TAggregateRoot));
             var snapshot =  isSnapshotable ? _eventStore.LoadSnapshot<ISnapshot>(id) : null;
 
@@ -75,20 +59,13 @@ namespace EventSourcing.Infrastructure
 
         public void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : class, IAggregateRoot
         {
-            EnsureTransaction();
             _identityMap.Add(aggregateRoot.Id, aggregateRoot);
         }
 
-        void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)
+        public void Commit()
         {
             _identityMap.Values.ForEach(CommitAggregateRoot);
-            preparingEnlistment.Prepared();
-        }
-
-        void IEnlistmentNotification.Commit(Enlistment enlistment)
-        {
             _identityMap.Clear();
-            enlistment.Done();
         }
 
         private void CommitAggregateRoot(IAggregateRoot aggregateRoot)
@@ -142,17 +119,6 @@ namespace EventSourcing.Infrastructure
 
             var snapshot = snapshotProvider.Snapshot();
             _eventStore.StoreSnapshot(aggregateRoot.Id, snapshot);
-        }
-
-        void IEnlistmentNotification.Rollback(Enlistment enlistment)
-        {
-            _identityMap.Clear();
-            enlistment.Done();
-        }
-
-        void IEnlistmentNotification.InDoubt(Enlistment enlistment)
-        {
-            enlistment.Done();
         }
     }
 }

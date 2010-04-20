@@ -7,5 +7,7 @@ namespace EventSourcing.Infrastructure
     {
         TAggregateRoot GetById<TAggregateRoot>(Guid id) where TAggregateRoot : class, IAggregateRoot;
         void Add<TAggregateRoot>(TAggregateRoot aggregateRoot) where TAggregateRoot : class, IAggregateRoot;
+        void Commit();
+        
     }
 }

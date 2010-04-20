@@ -48,35 +48,25 @@ namespace EventSourcing.SqlEventStorage
                 insertCmd.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier);
                 insertCmd.Parameters.Add("@EventData", SqlDbType.VarBinary);
 
-                if(stream.Count() > 1)
+                insertCmd.Parameters["@StreamId"].SourceColumn = "StreamId";
+                insertCmd.Parameters["@EventData"].SourceColumn = "EventData";
+
+                var data = new DataTable();
+                data.Columns.Add("StreamId").DataType = typeof(Guid);
+                data.Columns.Add("EventData").DataType = typeof(byte[]);
+
+                foreach (var @event in stream)
                 {
-                    insertCmd.Parameters["@StreamId"].SourceColumn = "StreamId";
-                    insertCmd.Parameters["@EventData"].SourceColumn = "EventData";
-
-                    var data = new DataTable();
-                    data.Columns.Add("StreamId").DataType = typeof(Guid);
-                    data.Columns.Add("EventData").DataType = typeof(byte[]);
-
-                    foreach (var @event in stream)
-                    {
-                        data.Rows.Add(streamId, Serialize(@event));
-                    }
-
-                    var dataAdapter = new SqlDataAdapter
-                                      {
-                                          InsertCommand = insertCmd,
-                                          UpdateBatchSize = 0
-                                      };
-
-                    dataAdapter.Update(data);
-                }
-                else
-                {
-                    insertCmd.Parameters["@StreamId"].Value = streamId;
-                    insertCmd.Parameters["@EventData"].Value = Serialize(stream.ElementAt(0));
-                    insertCmd.ExecuteNonQuery();
+                    data.Rows.Add(streamId, Serialize(@event));
                 }
 
+                var dataAdapter = new SqlDataAdapter
+                                  {
+                                      InsertCommand = insertCmd,
+                                      UpdateBatchSize = stream.Count()
+                                  };
+
+                dataAdapter.Update(data);
                 con.Close();
             }
         }
@@ -197,7 +187,8 @@ namespace EventSourcing.SqlEventStorage
             {
                 con.Open();
                 var query = new SqlCommand(LoadSnapshotQuery, con);
-                using(var reader = query.ExecuteReader())
+                query.Parameters.AddWithValue("@SourceId", sourceId);
+                using (var reader = query.ExecuteReader())
                 {
                     if(reader == null || !reader.Read())
                     {
