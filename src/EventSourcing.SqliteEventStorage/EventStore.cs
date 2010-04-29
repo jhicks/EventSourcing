@@ -5,7 +5,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
-using EventSourcing.EventStorage;
+using EventSourcing.Infrastructure;
 
 namespace EventSourcing.SqliteEventStorage
 {
