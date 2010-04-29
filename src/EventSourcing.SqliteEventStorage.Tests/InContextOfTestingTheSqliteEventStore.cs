@@ -10,7 +10,7 @@ namespace EventSourcing.SqliteEventStorage.Tests
     {
         protected string _connectionString;
         protected IFormatter _formatter;
-    	protected SQLiteConnection _connection;
+    	private SQLiteConnection _connection;
 
         protected override void SetupDependencies()
         {
@@ -23,6 +23,14 @@ namespace EventSourcing.SqliteEventStorage.Tests
 			SchemaGenerator.EnsureSchemaExists(_connection);
 
 			_subjectUnderTest = new EventStore(_connection, _formatter);
+        }
+
+        protected override void Finally()
+        {
+            _connection.Close();
+            _connection.Dispose();
+            _connection = null;
+            base.Finally();
         }
     }
 }

@@ -34,19 +34,27 @@ namespace EventSourcing.SqliteEventStorage.Tests
     	[Then]
         public void ItShouldNotStoreEventsInTheDatabase()
         {
-            var query = new SQLiteCommand("select count(*) from EventStore where StreamId = @StreamId", _connection);
-            query.Parameters.AddWithValue("@StreamId", _streamId);
-			var eventCount = (long)query.ExecuteScalar();
-			Assert.That(eventCount, Is.EqualTo(0));
+            using (var con = new SQLiteConnection(_connectionString))
+            {
+                con.Open();
+                var query = new SQLiteCommand("select count(*) from EventStore where StreamId = @StreamId", con);
+                query.Parameters.AddWithValue("@StreamId", _streamId);
+                var eventCount = (long) query.ExecuteScalar();
+                Assert.That(eventCount, Is.EqualTo(0));
+            }
         }
 
         [Then]
         public void ItShouldNotStoreSnapshotInTheDatabase()
         {
-			var query = new SQLiteCommand("select count(*) from SnapshotStore where SourceId = @SourceId", _connection);
-            query.Parameters.AddWithValue("@SourceId", _sourceId);
-            var eventCount = (long)query.ExecuteScalar();
-            Assert.That(eventCount, Is.EqualTo(0));
-		}
+            using (var con = new SQLiteConnection(_connectionString))
+            {
+                con.Open();
+                var query = new SQLiteCommand("select count(*) from SnapshotStore where SourceId = @SourceId", con);
+                query.Parameters.AddWithValue("@SourceId", _sourceId);
+                var eventCount = (long) query.ExecuteScalar();
+                Assert.That(eventCount, Is.EqualTo(0));
+            }
+        }
     }
 }
