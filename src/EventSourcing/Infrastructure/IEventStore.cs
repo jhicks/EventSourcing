@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace EventSourcing.EventStorage
+namespace EventSourcing.Infrastructure
 {
     public interface IEventStore
     {

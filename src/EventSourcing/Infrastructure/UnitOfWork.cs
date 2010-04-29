@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Transactions;
 using EventSourcing.Domain;
-using EventSourcing.EventStorage;
 
 namespace EventSourcing.Infrastructure
 {

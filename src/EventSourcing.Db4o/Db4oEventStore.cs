@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using Db4objects.Db4o.Linq;
 using Db4oFramework;
-using EventSourcing.EventStorage;
+using EventSourcing.Infrastructure;
 
 namespace EventSourcing.Db4o
 {
