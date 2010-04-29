@@ -134,7 +134,7 @@ namespace EventSourcing.SqlEventStorage
             return Replay<TEvent>(streamId, fromPointInTime, toPointInTime);
         }
 
-        private List<TEvent> Replay<TEvent>(SqlCommand command) where TEvent : class
+        private IEnumerable<TEvent> Replay<TEvent>(SqlCommand command) where TEvent : class
         {
             using(var con = new SqlConnection(_connectionString))
             {
@@ -142,21 +142,17 @@ namespace EventSourcing.SqlEventStorage
                 command.Connection = con;
                 using (var reader = command.ExecuteReader())
                 {
-                    var results = new List<TEvent>();
-
-                    if (reader == null)
+                    if(reader == null)
                     {
-                        return results;
+                        yield break;
                     }
 
                     while (reader.Read())
                     {
-                        var data = ReadBytesIntoBuffer(reader,0);
+                        var data = ReadBytesIntoBuffer(reader, 0);
                         var @event = Deserialize<TEvent>(data);
-                        results.Add(@event);
+                        yield return @event;
                     }
-
-                    return results;
                 }
             }
         }
